@@ -1,0 +1,6 @@
+Makefile.win
+Tetris.dev
+Tetris.exe
+Tetris.layout
+tests/
+src/*.o
