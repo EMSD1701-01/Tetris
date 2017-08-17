@@ -2,51 +2,46 @@
 #include "print.h"
 #include <time.h>
 #include <signal.h>
-#include <stdlib.h>
 #include "control.h"
 extern int x,y;
 
-#ifdef WIN32
-
-#define random() rand()
-
-#else
-
-#endif 
-
 void init_game()
 {
-	//³õÊ¼»¯ÓÎÏ·½çÃæ
+	//åˆå§‹åŒ–æ¸¸æˆç•Œé¢
 	print_start_interface();
 
-	//»ñÈ¡ÈÎÒâ×Ö·û£¬ÓÎÏ·¿ªÊ¼
+	//è·å–ä»»æ„å­—ç¬¦ï¼Œæ¸¸æˆå¼€å§‹
 	int ch = getch();
 
-	//printf("getch: %c,%d\n",ch,ch);
-	//ÔÚÖ¸¶¨Î»ÖÃ³öÏÖÒ»¸öËæ»úÉú³ÉÒ»¸ö Í¼ĞÎ
+	//åœ¨æŒ‡å®šä½ç½®å‡ºç°ä¸€ä¸ªéšæœºç”Ÿæˆä¸€ä¸ª å›¾å½¢
 	srand(time(NULL));
 	//num = random()%(max-min+1)+min;
 	num = random()%(6-0+1)+0;
 	mode = random()%(3-0+1)+0;
+	// num = 1;
+	// mode = 0;
 	color = random()%(46-41+1)+41;
 
 	x = i_x;
 	y = i_y;
 	print_mode_shape(num,mode,x,y,color);
 
-	//ÔÚÏÂÒ»Í¼ĞÎ¿òÖĞ£¬Êä³öÏÂÒ»¸öÍ¼ĞÎ
+	//åœ¨ä¸‹ä¸€å›¾å½¢æ¡†ä¸­ï¼Œè¾“å‡ºä¸‹ä¸€ä¸ªå›¾å½¢
+	n_num = random()%(6-0+1)+0;
+	n_mode = random()%(3-0+1)+0;
+	n_color = random()%(46-41+1)+41;
 	print_next();
 }
 
 int main()
 {
-	//ÓÎÏ·³õÊ¼»¯
+	//æ¸¸æˆåˆå§‹åŒ–
 	init_game();
 
-	//×¢²áĞÅºÅ
-	//signal(SIGALRM,catch_signal);
-	//¿ªÆô¶¨Ê±Æ÷
-	//alarm_us(tm);
+	//æ³¨å†Œä¿¡å·
+	signal(SIGALRM,catch_signal);
+	//å¼€å¯å®šæ—¶å™¨
+	alarm_us(tm);
 
 	key_control();
 

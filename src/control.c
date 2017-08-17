@@ -1,92 +1,129 @@
+
 #include "control.h"
 #include <sys/time.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
-//#include <termios.h>				//linux
+#include <termios.h>
+#include <linux/input.h>
 
-//extern struct termios tm_old;		//linux
-extern int num,mode,color;
-extern int n_num,n_mode,n_color;
-extern int i_x,i_y;
-extern int x,y;
-extern int s_x,s_y,l_x,l_y;
+
+
+static int judge_shape(int n,int m,int x,int y);
+static void store_shape();
+// static void init_shape();
+static void new_shape();
+static void destroy_line();
+static int is_over();
+static void move_shape_down();
+static void fall_down();
+static void move_shape_left();
+static void move_shape_right();
+static void change_shape();
+
+
 
 int tm = 800000;
-extern void eraser_shape(int,int,int,int,int);
-extern int shape[7][4][18];
 
 int p_x = 60,p_y = 15;
 int matrix[24][28] = {0};
 int score,level;
 
-#ifdef WIN32	//Windows 
 
-#else	//Linux 
 
-//Î¢Ãî¶¨Ê±Æ÷,¶¨Ê±Æ÷Ò»µ©Æô¶¯£¬»áÃ¿¸ôÒ»¶ÎÊ±¼ä·¢ËÍSIGALRMĞÅºÅ
+//å¾®å¦™å®šæ—¶å™¨,å®šæ—¶å™¨ä¸€æ—¦å¯åŠ¨ï¼Œä¼šæ¯éš”ä¸€æ®µæ—¶é—´å‘é€SIGALRMä¿¡å·
 void alarm_us(int t)
 {
 	struct itimerval value;
-	//¶¨Ê±Æ÷Æô¶¯µÄ³õÊ¼Öµ
+	//å®šæ—¶å™¨å¯åŠ¨çš„åˆå§‹å€¼
 	value.it_value.tv_sec = 0;
 	value.it_value.tv_usec = t;
 
-	//¶¨Ê±Æ÷Æô¶¯ºóµÄ¼ä¸ôÊ±¼äÖµ
+	//å®šæ—¶å™¨å¯åŠ¨åçš„é—´éš”æ—¶é—´å€¼
 	value.it_interval.tv_sec = 0;
 	value.it_interval.tv_usec = t;
 
 	setitimer(ITIMER_REAL,&value,NULL);
 }
 
-//ĞÅºÅ×¢²áº¯Êı
+
+
+//ä¿¡å·æ³¨å†Œå‡½æ•°
 void catch_signal(int signo)
 {
-	//ÏòÏÂÒÆ¶¯Í¼ĞÎ£¬Ò»Ö±µ½µ×²¿
+	//å‘ä¸‹ç§»åŠ¨å›¾å½¢ï¼Œä¸€ç›´åˆ°åº•éƒ¨
 	move_shape_down(num,mode,color);
-	signal(SIGALRM,catch_signal);
+	// signal(SIGALRM,catch_signal);
 }
 
-//¹Ø±Õ¶¨Ê±Æ÷
+
+
+//å…³é—­å®šæ—¶å™¨
 void close_alarm()
 {
 	struct itimerval value;
-	//¶¨Ê±Æ÷Æô¶¯µÄ³õÊ¼Öµ
+	//å®šæ—¶å™¨å¯åŠ¨çš„åˆå§‹å€¼
 	value.it_value.tv_sec = 0;
 	value.it_value.tv_usec = 0;
 
-	//¶¨Ê±Æ÷Æô¶¯ºóµÄ¼ä¸ôÊ±¼äÖµ
+	//å®šæ—¶å™¨å¯åŠ¨åçš„é—´éš”æ—¶é—´å€¼
 	value.it_interval.tv_sec = 0;
 	value.it_interval.tv_usec = 0;
 	setitimer(ITIMER_REAL,&value,NULL);
 }
 
-#endif	//WIN32
 
-//Åö×²¼ì²â,¼ì²â·½¿éÊÇ·ñÅö×²µ½±ß½ç»òÆäËû·½¿é
-int judge_shape(int n,int m,int x,int y)
+
+struct termios tm_old;
+//è·å–ä¸€ä¸ªå­—ç¬¦è€Œ ä¸å›æ˜¾
+int getch()
+{
+	struct termios tm;
+	tcgetattr(0, &tm_old);
+	cfmakeraw(&tm);
+	tcsetattr(0, 0, &tm);
+	int ch = getchar();
+	tcsetattr(0, 0, &tm_old);
+
+	return ch;
+}
+
+
+
+static void xyconsoletobox(int *a, int *b)
+{
+	*a = (*a - 12) / 2;
+	*b = *b - 6;
+}
+
+
+
+//ç¢°æ’æ£€æµ‹,æ£€æµ‹æ–¹å—æ˜¯å¦ç¢°æ’åˆ°è¾¹ç•Œæˆ–å…¶ä»–æ–¹å—
+static int judge_shape(int n,int m,int a,int b)
 {
 	int xx, yy;
 	int *sp = shape[n][m];
+
+	xyconsoletobox(&a, &b);
 	
-	if(x < 0) return 1; //×ó±ß½ç 
-	if(x > 28 / 2 - sp[16]) return 1; //ÓÒ±ß½ç 
-	if(y > 24 - sp[17]) return 1; //ÏÂ±ß½ç 
+	if(a < 0) return 1; //å·¦è¾¹ç•Œ 
+	if(a > 28 / 2 - (4 - sp[16])) return 1; //å³è¾¹ç•Œ 
+	if(b > 24 - (4 - sp[17])) return 1; //ä¸‹è¾¹ç•Œ 
 	
-	/* ĞĞ ¼õsp[17]ÊÇÎªÁË±ÜÃâÍ¼ĞÎµ½´ï±ß½çÅĞ¶ÏmatrixÊı×éÔ½½ç 
+	/* è¡Œ å‡sp[17]æ˜¯ä¸ºäº†é¿å…å›¾å½¢åˆ°è¾¾è¾¹ç•Œåˆ¤æ–­matrixæ•°ç»„è¶Šç•Œ 
 	 *
 	 *      [][]#
 	 *      [][]#
 	 *  
-	 * ¼ÙÉèÈçÍ¼#´ú±íÇ½±Ú£¬Ìï×Ö·½¿éµ½´ïÓÒ±ß½ç£¬
-	 * µ«ÊÇÌï×Ö·½¿éÓÒ±ßµÄ·½¿é²»ĞèÒª¿¼ÂÇÒ²²»¿ÉÒÔ¿¼ÂÇ
-	 * ÕâÊ±matrix[y][x]ÖĞºá×ø±ê(x + 3) * 2»áÔ½½ç
+	 * å‡è®¾å¦‚å›¾#ä»£è¡¨å¢™å£ï¼Œç”°å­—æ–¹å—åˆ°è¾¾å³è¾¹ç•Œï¼Œ
+	 * ä½†æ˜¯ç”°å­—æ–¹å—å³è¾¹çš„æ–¹å—ä¸éœ€è¦è€ƒè™‘ä¹Ÿä¸å¯ä»¥è€ƒè™‘
+	 * è¿™æ—¶matrix[b][a]ä¸­æ¨ªåæ ‡(a + 3) * 2ä¼šè¶Šç•Œ
 	 */ 
-	for(yy = 0; yy < 4 - sp[17]; yy++)  
+	for(yy = 0; yy < 4 - sp[17]; yy++)
 	{
-		for(xx = 0; xx < 4 - sp[16]; xx++)  //ÁĞ
+		for(xx = 0; xx < 4 - sp[16]; xx++)  //åˆ—
 		{
-			if((sp[yy * 4 + xx] & matrix[y + yy][(x + xx) * 2]))
+			if((sp[yy * 4 + xx] & matrix[b + yy][(a + xx) * 2]))
 			{
 				return 1;
 			}
@@ -94,130 +131,285 @@ int judge_shape(int n,int m,int x,int y)
 	}
 	return 0;
 }
-//±£´æ·½¿éÆåÅÌĞÅÏ¢£¬·½¿éÂäµØºó£¬Ğè½«Õû¸ö·½¿éÍ¼ĞÎ½øĞĞ±£´æ
-static void store_shape(int n,int m,int x,int y)
-{
 
-}
-//³õÊ¼»¯ÆåÅÌ
-static void init_shape()
-{
-	//µ±·½¿éÏÂÂäµ½µ×²¿Ê±£¬¿ØÖÆÇø²úÉúĞÂµÄ·½¿é
-	//´òÓ¡ÏÂÒÆ·½¿é
 
-}
-//´òÓ¡ÆåÅÌ
-static void print_matrix()
-{
 
-}
-//´òÓ¡·½¿é·ÖÊı¼°µÈ¼¶
-static void print_score_level()
+//ä¿å­˜æ–¹å—æ£‹ç›˜ä¿¡æ¯ï¼Œæ–¹å—è½åœ°åï¼Œéœ€å°†æ•´ä¸ªæ–¹å—å›¾å½¢è¿›è¡Œä¿å­˜
+static void store_shape()
 {
-
+	int i,  j;
+	int a, b;
+	for (i = 0; i < 4; i++)
+	{
+		for (j = 0; j < 4; j++)
+		{
+			if (shape[num][mode][4 * i + j] == 1)
+			{
+				a = x + 2 * j;
+				b = y + i;
+				xyconsoletobox(&a, &b);
+				// printf("a:%d, b:%d\r\n", a, b);
+				matrix[b][a * 2] = 1;
+				matrix[b][a * 2 + 1] = color;
+			}
+		}
+	}
 }
-//ÏûĞĞ¼ì²â£¬µ±Ò»ĞĞ²»ÂúÊ±£¬½øĞĞÏûĞĞ²Ù×÷
+
+
+
+// //åˆå§‹åŒ–æ£‹ç›˜
+// static void init_shape()
+// {
+// 	//å½“æ–¹å—ä¸‹è½åˆ°åº•éƒ¨æ—¶ï¼Œæ§åˆ¶åŒºäº§ç”Ÿæ–°çš„æ–¹å—
+// 	//æ‰“å°ä¸‹ç§»æ–¹å—
+// }
+
+//ç”Ÿæˆæ–°å›¾å½¢
+static void new_shape()
+{
+	x = i_x;
+	y = i_y;
+	num = n_num;
+	mode = n_mode;
+	color = n_color;
+	n_num = random()%(6-0+1)+0;
+	n_mode = random()%(3-0+1)+0;
+	n_color = random()%(46-41+1)+41;
+}
+
+
+
+//æ¶ˆè¡Œæ£€æµ‹ï¼Œå½“ä¸€è¡Œæ»¡æ—¶ï¼Œè¿›è¡Œæ¶ˆè¡Œæ“ä½œ
 static void destroy_line()
 {
-	//¼ì²âµ½ÏûĞĞ
-	//·ÖÊıÀÛ¼Ó
-	//ÖØĞÂ´òÓ¡µØÍ¼
+	int i, j;
+	int eraseline;
+	int lines = 0;
+	while (1)
+	{
+		eraseline = 1;
+		for (i = 0; i < 14; i++)
+		{
+			if (matrix[23][i] == 0)
+			{
+				eraseline = 0;
+				break;
+			}
+		}
+		if (eraseline == 1)
+		{
+			lines++;
+		}
+		else
+		{
+			break;
+		}
+	}
+	//æ£€æµ‹åˆ°æ¶ˆè¡Œ
+	if (lines > 0)
+	{
+		score += lines * 10;
+		for (i = 23 - lines; i >= 0; i--)
+		{
+			for (j = 0; i < 14; j++)
+			{
+				matrix[i + lines][j * 2] = matrix[i][j * 2];
+				matrix[i + lines][j * 2 + 1] = matrix[i][j * 2 + 1];
+			}
+		}
+	}
 }
 
-extern void game_over();
-//ÅĞ¶ÏÓÎÏ·ÊÇ·ñ½áÊø
-int is_over()
+
+
+//åˆ¤æ–­æ¸¸æˆæ˜¯å¦ç»“æŸ
+static int is_over()
 {
-
+	int i;
+	for (i = 5; i < 9; i++)
+	{
+		if (matrix[0][i * 2] == 1)
+			return 1;
+	}
+	return 0;
 }
-//Í¼ĞÎÏÂÂäº¯Êı
-int move_shape_down(int n,int m,int c)
+
+
+//å›¾å½¢ä¸‹è½å‡½æ•°
+static void move_shape_down()
 {
-	//Ê×ÏÈÅĞ¶Ï£¬Í¼ĞÎÓĞÃ»ÓĞ´¥µ×
-	//±£´æÏÖÓĞÍ¼ĞÎ
-	//ÏûĞĞ
-	//ÒÆ¶¯ºó²»»á´¥µ×
-	//ÏÈÇåÀíÔ­ÓĞÍ¼ĞÎ
-
+	//é¦–å…ˆåˆ¤æ–­ï¼Œå›¾å½¢æœ‰æ²¡æœ‰è§¦åº•
+	if (judge_shape(num, mode, x, y + 1) == 1)		//è§¦åº•
+	{
+		//ä¿å­˜ç°æœ‰å›¾å½¢
+		store_shape();
+		//æ¶ˆè¡Œ
+		destroy_line();
+		//é‡æ–°æ‰“å°åœ°å›¾ã€åˆ†æ•°
+		print_matrix();
+	//	print_score_level();
+		//åˆ¤æ–­æ¸¸æˆæ˜¯å¦ç»“æŸ
+		if (is_over() == 1)
+		{
+			game_over();
+			close_alarm();
+		}
+		//ç”Ÿæˆæ–°å›¾å½¢
+		new_shape();
+		print_mode_shape(num, mode, x, y, color);
+		print_next();
+		// close_alarm();
+	}
+	else									//ç§»åŠ¨åä¸ä¼šè§¦åº•
+	{
+		//å…ˆæ¸…ç†åŸæœ‰å›¾å½¢
+		eraser_shape(num, mode, x, y, color);
+		y++;
+		print_mode_shape(num, mode, x, y, color);
+	}
 }
+
+
 
 static void fall_down()
 {
-	//Ö±½ÓÂäµØ
-}
-//·½¿é×óÒÆ
-static int move_shape_left(int n,int m,int a,int b,int c)
-{
-	//Èç¹û²»ÄÜ×óÒÆ£¬Ö±½Ó·µ»Ø 
-	if(judge_shape(n, m, x - 1, y)) return 0;
-	
-	//¿ÉÒÔ×óÒÆ£¬¸Ä±äºá×ø±ê 
-	x--;
-	
-	
-	
-	//Èç¹ûÔ½½ç£¬·µ»Ø
-	//¼ì²âÅö×²
-
-
-	//Ïû³ıµ±Ç°Í¼ĞÎ
-	//×óÒÆ
-	//´òÓ¡
-
-
-	return 0;
-}
-//·½¿éÓÒÒÆ
-static int move_shape_right(int n,int m,int a,int b,int c)
-{
-	//Èç¹ûÔ½½ç£¬·µ»Ø
-	//¼ì²âÅö×²
-
-
-	//Ïû³ıµ±Ç°Í¼ĞÎ
-	//ÓÒÒÆ
-	//´òÓ¡
-
-	return 0;
-}
-//·½¿é±äĞÎ
-static int change_shape(int n,int m,int c)
-{
-	//»ñÈ¡ÏÂÒ»¸ö¿É±ä»»µÄ×´Ì¬ 
-	int tm = m < 3 ? m + 1 : 0;
-	if(judge_shape(n, tm, x, y))  
+	//ç›´æ¥è½åœ°
+	int i, j;
+	int sh, gr;
+	int step = 24;
+	for (i = 0; i < 4; i++)
 	{
-		//±ä»»²úÉúÅö×²
-		return 0;
+		sh = -1;
+		for (j = 0; j < 4; j++)
+		{
+			if (shape[num][mode][j * 4 + i] == 1)
+				sh = j;
+		}
+		for (j = 23; j > y && matrix[j][i] == 1; j--) ;
+		gr = j;
+		if (sh > -1)
+		{
+			j = gr - sh - y;
+			if (step > j)
+				step = j;
+		}
+	}
+	eraser_shape(num, mode, x, y, color);
+	y += step;
+	print_mode_shape(num, mode, x, y, color);
+}
+
+
+
+//æ–¹å—å·¦ç§»
+static void move_shape_left()
+{
+	//å¦‚æœè¶Šç•Œï¼Œè¿”å›
+	//æ£€æµ‹ç¢°æ’
+	if (judge_shape(num, mode, x - 2, y) == 1)		//æ’å¢™
+	{
+		return ;
+	}
+	//æ¶ˆé™¤å½“å‰å›¾å½¢ å·¦ç§» æ‰“å°
+	else
+	{
+		//å…ˆæ¸…ç†åŸæœ‰å›¾å½¢
+		eraser_shape(num, mode, x, y, color);
+		x -= 2;
+		print_mode_shape(num, mode, x, y, color);
+	}
+}
+
+
+
+//æ–¹å—å³ç§»
+static void move_shape_right()
+{
+	//å¦‚æœè¶Šç•Œï¼Œè¿”å›
+	//æ£€æµ‹ç¢°æ’
+	if (judge_shape(num, mode, x + 2, y) == 1)		//æ’å¢™
+	{
+		return ;
+	}
+	//æ¶ˆé™¤å½“å‰å›¾å½¢ å·¦ç§» æ‰“å°
+	else
+	{
+		//å…ˆæ¸…ç†åŸæœ‰å›¾å½¢
+		eraser_shape(num, mode, x, y, color);
+		x += 2;
+		print_mode_shape(num, mode, x, y, color);
+	}
+}
+
+
+
+//æ–¹å—å˜å½¢
+static void change_shape()
+{
+	//è·å–ä¸‹ä¸€ä¸ªå¯å˜æ¢çš„çŠ¶æ€
+	int tm = mode < 3 ? mode + 1 : 0;
+	if(judge_shape(num, tm, x, y) == 1)  
+	{
+		//å˜æ¢äº§ç”Ÿç¢°æ’
 	}
 	else
 	{
-		//²Á³ıÔ­À´µÄĞÎ×´ 
-		eraser_shape(n, m, x, y, c);
-		//´òÓ¡ĞÂĞÎ×´ 
-		print_mode_shape(n, tm, x, y, c);
-		//ĞŞ¸Äµ±Ç°ĞÎ×´ÎªĞÂĞÎ×´ 
+		//æ“¦é™¤åŸæ¥çš„å½¢çŠ¶
+		eraser_shape(num, mode, x, y, color);
+		//æ‰“å°æ–°å½¢çŠ¶
+		print_mode_shape(num, tm, x, y, color);
+		//ä¿®æ”¹å½“å‰å½¢çŠ¶ä¸ºæ–°å½¢çŠ¶
 		mode = tm;
-		return 1; 
 	}
 }
 
-void game_over()
-{
-	//¹Ì¶¨µØµã´òÓ¡ÓÎÏ·½áÊø×ÖÑù
 
-}
 
 void key_control()
 {
 	static int count;
 	int ch;
-	//qÍË³ö
-	//»Ø³µÖ±½Óµ½µ×
-	//¿Õ¸ñÔİÍ£
-	//ÉÏ ·½¿éĞı×ª
-	//ÏÂ ·½¿éÏÂÒÆ
-	//×ó ·½¿é×óÒÆ
-	//ÓÒ ·½¿éÓÒÒÆ
-
+	//qé€€å‡º
+	//å›è½¦ç›´æ¥åˆ°åº•
+	//ç©ºæ ¼æš‚åœ
+	//ä¸Š æ–¹å—æ—‹è½¬
+	//ä¸‹ æ–¹å—ä¸‹ç§»
+	//å·¦ æ–¹å—å·¦ç§»
+	//å³ æ–¹å—å³ç§»
+	while (1)
+	{
+		ch = getch();
+		switch (ch)
+		{
+			case 65://KEY_UP:
+				change_shape();
+				break;
+			case 66://KEY_DOWN:
+				move_shape_down();
+				break;
+			case 68://KEY_LEFT:
+				move_shape_left();
+				break;
+			case 67://KEY_RIGHT:
+				move_shape_right();
+				break;
+			case 13://KEY_ENTER:
+				fall_down();
+				break;
+			case 32://KEY_SPACE:
+				close_alarm();
+				break;
+			case 113://KEY_Q:
+				game_over();
+				return;
+				break;
+			default: break;
+		}
+	}
+	
 }
+
+
+
+
