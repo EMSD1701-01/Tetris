@@ -251,8 +251,8 @@ static void move_shape_down()
 		//生成新图形
 		eraser_shape(n_num, n_mode, n_x, n_y);
 		new_shape();
-		print_mode_shape(n_num, n_mode, n_x, n_y, n_color);
 		print_mode_shape(num, mode, x, y, color);
+		print_mode_shape(n_num, n_mode, n_x, n_y, n_color);
 		// close_alarm();
 	}
 	else									//移动后不会触底
@@ -269,26 +269,9 @@ static void move_shape_down()
 static void fall_down()
 {
 	//直接落地
-	int i, j;
-	int sh, gr;
-	int step = 24;
-	for (i = 0; i < 4; i++)
-	{
-		sh = -1;
-		for (j = 0; j < 4; j++)
-		{
-			if (shape[num][mode][j * 4 + i] == 1)
-				sh = j;
-		}
-		for (j = 23; j > y && matrix[j][i] == 1; j--) ;
-		gr = j;
-		if (sh > -1)
-		{
-			j = gr - sh - y;
-			if (step > j)
-				step = j;
-		}
-	}
+	int step = 1;
+	for (step; judge_shape(num, mode, x, y + step) != 1; step++) ;
+	step--;
 	eraser_shape(num, mode, x, y);
 	y += step;
 	print_mode_shape(num, mode, x, y, color);
@@ -396,6 +379,8 @@ void key_control()
 				break;
 			case 113://KEY_Q:
 				game_over();
+				clear();
+				printf("\r\n");
 				return;
 				break;
 			default: break;

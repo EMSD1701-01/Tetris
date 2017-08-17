@@ -1,10 +1,15 @@
 #include "print.h"
 #include <stdio.h>
+#include <termios.h>
+
+
 
 int s_x = 9+2+28+2+4;
 int s_y = 4+1+6+1+5;
 int l_x = 9+2+28+2+4;
 int l_y = 4+1+6+1+10;
+
+
 
 int num, mode, color;
 int n_num, n_mode, n_color;
@@ -71,7 +76,7 @@ int shape[7][4][18] =
 
 
 const int COLORS[6] = {
-	0xf0,0xf0,0xf0,0x0f,0xf0,0x0f 
+	0xf0,0xf0,0xf0,0x0f,0xf0,0xf0
 };
 
 
@@ -317,6 +322,7 @@ void game_over()
 	int a = 9 + 2 + 10;
 	int b = 4 + 1 + 9 + 1;
 	printxy(" Game Over!!", 45, a, b);
+	setCursorVisable(1);
 	fflush(NULL);
 	return ;
 }

@@ -19,6 +19,10 @@ extern int score,level;
 
 
 
+void clear();
+
+
+
 int getch();
 void print_start_interface();
 void print_mode_shape(int n,int m,int x,int y,int c);
