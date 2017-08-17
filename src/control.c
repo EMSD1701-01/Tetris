@@ -1,13 +1,10 @@
-
 #include "control.h"
 #include <sys/time.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
-#include <termios.h>
-#include <linux/input.h>
-
-
+//#include <termios.h>
+//#include <linux/input.h>
 
 static int judge_shape(int n,int m,int x,int y);
 static void store_shape();
@@ -34,16 +31,16 @@ int score,level;
 //微妙定时器,定时器一旦启动，会每隔一段时间发送SIGALRM信号
 void alarm_us(int t)
 {
-	struct itimerval value;
-	//定时器启动的初始值
-	value.it_value.tv_sec = 0;
-	value.it_value.tv_usec = t;
-
-	//定时器启动后的间隔时间值
-	value.it_interval.tv_sec = 0;
-	value.it_interval.tv_usec = t;
-
-	setitimer(ITIMER_REAL,&value,NULL);
+//	struct itimerval value;
+//	//定时器启动的初始值
+//	value.it_value.tv_sec = 0;
+//	value.it_value.tv_usec = t;
+//
+//	//定时器启动后的间隔时间值
+//	value.it_interval.tv_sec = 0;
+//	value.it_interval.tv_usec = t;
+//
+//	setitimer(ITIMER_REAL,&value,NULL);
 }
 
 
@@ -61,31 +58,31 @@ void catch_signal(int signo)
 //关闭定时器
 void close_alarm()
 {
-	struct itimerval value;
-	//定时器启动的初始值
-	value.it_value.tv_sec = 0;
-	value.it_value.tv_usec = 0;
-
-	//定时器启动后的间隔时间值
-	value.it_interval.tv_sec = 0;
-	value.it_interval.tv_usec = 0;
-	setitimer(ITIMER_REAL,&value,NULL);
+//	struct itimerval value;
+//	//定时器启动的初始值
+//	value.it_value.tv_sec = 0;
+//	value.it_value.tv_usec = 0;
+//
+//	//定时器启动后的间隔时间值
+//	value.it_interval.tv_sec = 0;
+//	value.it_interval.tv_usec = 0;
+//	setitimer(ITIMER_REAL,&value,NULL);
 }
 
 
 
-struct termios tm_old;
+//struct termios tm_old;
 //获取一个字符而 不回显
 int getch()
 {
-	struct termios tm;
-	tcgetattr(0, &tm_old);
-	cfmakeraw(&tm);
-	tcsetattr(0, 0, &tm);
-	int ch = getchar();
-	tcsetattr(0, 0, &tm_old);
-
-	return ch;
+//	struct termios tm;
+//	tcgetattr(0, &tm_old);
+//	cfmakeraw(&tm);
+//	tcsetattr(0, 0, &tm);
+//	int ch = getchar();
+//	tcsetattr(0, 0, &tm_old);
+//
+//	return ch;
 }
 
 
@@ -173,9 +170,9 @@ static void new_shape()
 	num = n_num;
 	mode = n_mode;
 	color = n_color;
-	n_num = random()%(6-0+1)+0;
-	n_mode = random()%(3-0+1)+0;
-	n_color = random()%(46-41+1)+41;
+//	n_num = random()%(6-0+1)+0;
+//	n_mode = random()%(3-0+1)+0;
+//	n_color = random()%(46-41+1)+41;
 }
 
 

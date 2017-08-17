@@ -1,8 +1,6 @@
 #include "print.h"
 #include <stdio.h>
-#include <termios.h>
-
-
+//#include <termios.h>
 
 int s_x = 9+2+28+2+4;
 int s_y = 4+1+6+1+5;
@@ -65,7 +63,14 @@ int shape[7][4][18] =
 			{0,1,0,0, 0,1,0,0, 1,1,0,0, 0,0,0,0, 2,1}},
 	};
 
+#ifdef WIN32
+#define random() rand()
 
+
+#else
+
+
+#endif
 
 void print_start_interface()
 {

@@ -3,7 +3,11 @@
 #include <time.h>
 #include <signal.h>
 #include "control.h"
+
 extern int x,y;
+
+
+#define random() rand() 
 
 void init_game()
 {
@@ -39,7 +43,7 @@ int main()
 	init_game();
 
 	//注册信号
-	signal(SIGALRM,catch_signal);
+	//signal(SIGALRM,catch_signal);
 	//开启定时器
 	alarm_us(tm);
 
