@@ -1,11 +1,18 @@
-
 #include "control.h"
 #include <sys/time.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#ifdef WIN32
+
 #include <signal.h>
-#include <termios.h>
 #include <linux/input.h>
+
+#else
+
+#include <windows.h>
+
+#endif
 
 
 
