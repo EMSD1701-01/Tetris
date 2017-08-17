@@ -1,6 +1,5 @@
 #include "print.h"
 #include <stdio.h>
-//#include <termios.h>
 
 int s_x = 9+2+28+2+4;
 int s_y = 4+1+6+1+5;
@@ -15,8 +14,7 @@ int i_x = 9+2+28/2-1, i_y = 6;
 int n_x = 46, n_y = 8;
 int x, y;
 
-
-
+static char num_buf[8];
 //shape[][][16]:距离 右侧空格项  [17]:距离 下方空格项
 int shape[7][4][18] = 
 	{
@@ -63,58 +61,114 @@ int shape[7][4][18] =
 			{0,1,0,0, 0,1,0,0, 1,1,0,0, 0,0,0,0, 2,1}},
 	};
 
-#ifdef WIN32
+#ifdef WIN32 //Windows
+#include <windows.h>
+
 #define random() rand()
 
+const int COLORS[6] = {
+	0xf0,0xf0,0xf0,0x0f,0xf0,0xf0
+};
 
-#else
+HANDLE hand;
 
+void gotoxy(int x, int y){
+	COORD loc;
+	loc.X = x;
+	loc.Y = y;
+	SetConsoleCursorPosition(hand, loc);
+}
 
-#endif
+void print(char *str, int c)
+{
+	SetConsoleTextAttribute(hand, COLORS[c - 41]);
+	printf("%s", str);
+}
+
+void clear(){
+	system("cls");
+}
+
+void setCursorVisable(int v){
+	CONSOLE_CURSOR_INFO cursor_info = {100, v};
+	SetConsoleCursorInfo(hand, &cursor_info);
+}
+
+#else //Linux
+
+void gotoxy(x,y) 
+{
+	printf("\033[%d;%dH", y, x);
+}
+
+void print(char *str, int c){
+	printf("\033[%dm%s\033[0m", c, str);
+}
+
+void clear(){
+	printf("\033[2J");
+}
+
+void setCursorVisable(int v){
+	if(v){
+		printf("\033[?25h");
+	}else{
+		printf("\033[?25l");
+	}
+}
+
+#endif //WIN32
+
+void printxy(char *str, int color, int x, int y){
+	gotoxy(x, y);
+	print(str, color);
+}
 
 void print_start_interface()
 {
+#ifdef WIN32 //Windows
+	//get output handle 
+	hand = GetStdHandle(STD_OUTPUT_HANDLE);
+#endif
 	//清屏
 	int l;
 	int w;
-	printf("\033[2J");
+	clear();
 	int a, b;
 
 	for (l = 5; l < 30; l++)
 	{
 		a = 10;
 		b = l;
-		printf("\033[%d;%dH\033[45m  \033[0m", b, a);
+		printxy(" ", 45, a, b);
 		a = 40;
-		printf("\033[%d;%dH\033[45m  \033[0m", b, a);
+		printxy(" ", 45, a, b);
 		a = 58;
-		printf("\033[%d;%dH\033[45m  \033[0m", b, a);
+		printxy(" ", 45, a, b);
 	}
 	for (w = 10; w < 59; w++)
 	{
 		a=w;
 		b=5;
-		printf("\033[%d;%dH\033[45m  \033[0m",b,a);
+		printxy(" ", 45, a, b);
 		b=30;
-		printf("\033[%d;%dH\033[45m  \033[0m",b,a);		
+		printxy(" ", 45, a, b);
 	}
 	//打印分数等级位置
-	printf("\033[%d;%dH分数:\033[0m", s_y, s_x);
-	printf("\033[%d;%dH等级:\033[0m", l_y, l_x);
+	printxy("Score:", 45, s_x, s_y);
+	printxy("Level:", 45, l_x, l_y);
 	//打印边框 行，（5,10-58） （30，10-58）
 	//打印另外一行，（12，42-56）
 	for(w=40;w<59;w++)
 	{	
 		 b=12;
 		 a=w;
-		 printf("\033[%d;%dH\033[45m \033[0m",b,a);
+		 printxy(" ", 45, a, b);
 	}
 	//打印边框 列三条（5-31,10）（5-31,40）（5-31,56）
 	//隐藏光标
-	printf("\033[?25h");
+	setCursorVisable(0);
 }
-
-
 
 
 //指定位置，输出图形
@@ -133,14 +187,12 @@ void print_mode_shape(int n, int m, int x, int y, int c)
 		}	
 		if(shape[n][m][i] == 1)
 		{
-			printf("\033[%d;%dH\033[%dm[]\033[0m", m_y, m_x, c);
+			printxy("[]", c, m_x, m_y);
 		}
 		m_x = m_x + 2;
 	}	
 	fflush(NULL);
 }
-
-
 
 
 //消除制定位置的图形
@@ -159,7 +211,7 @@ void eraser_shape(int n, int m, int x, int y, int c)
 		}
 		if(shape[n][m][i]==1)
 		{
-			printf("\033[%d;%dH  \033[0m", m_y, m_x);
+			printxy("  ", c, m_x, m_y);
 		}
 		m_x = m_x + 2;
 	}
@@ -188,7 +240,8 @@ void game_over()
 	//固定地点打印游戏结束字样
 	i_x=9+2+10;
 	i_y=4+1+9+1;
-	printf("\033%d;%dH\33[45m Game Over!!\033[0m\n",i_y,i_x);
+	printxy(" Game Over!!", 45, i_x, i_y);
+	return ;
 }
 
 
@@ -204,27 +257,28 @@ void print_matrix()
 		{
 			if (matrix[w][l] == 0)
 			{
-				printf("\033[%d;%dH  \033[0m", w + 6, l + 12);
+				printxy("  ", 45, l + 12, w + 6);
 			}
 			else
 			{
-				printf("\033[%d;%dH\33[%dm[]\033[0m", w + 6, l + 12, matrix[w][l + 1]);
+				printxy("[]", matrix[w][l + 1], l + 12, w + 6);
 			}
 		}
 	}
 }
 
-
-
 //打印方块分数及等级
 void print_score_level()
 {
-	i_x=s_x+2;
-	i_y=s_y;
-	printf("\033[%d;%dH\33[46m%d\033[0m\n",i_y,i_x,score);
+	int ss_x=s_x+5;
+	int ss_y=s_y;
+	int lv_x = l_x + 5;
+	int lv_y = l_y;
+	
+	printxy(itoa(score, num_buf, 10), 46, ss_x, ss_y);
 	i_x=l_x+2;
 	i_y=l_y;
-	printf("\033[%d;%dH\33[46m%d\033[0m\n",i_y,i_x,level);
+	printxy(itoa(level, num_buf, 10), 46, lv_x, lv_y);
 }
 
 

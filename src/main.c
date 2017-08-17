@@ -43,7 +43,7 @@ int main()
 	init_game();
 
 	//注册信号
-	//signal(SIGALRM,catch_signal);
+	signal(SIGALRM,catch_signal);
 	//开启定时器
 	alarm_us(tm);
 
