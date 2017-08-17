@@ -5,12 +5,14 @@
 
 #ifdef WIN32
 
-#include <signal.h>
-#include <linux/input.h>
+#include <windows.h>
 
 #else
 
-#include <windows.h>
+#include <signal.h>
+#include <linux/input.h>
+
+
 
 #endif
 
