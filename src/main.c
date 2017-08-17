@@ -3,11 +3,7 @@
 #include <time.h>
 #include <signal.h>
 #include "control.h"
-
 extern int x,y;
-
-
-#define random() rand() 
 
 void init_game()
 {

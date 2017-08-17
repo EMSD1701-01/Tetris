@@ -23,7 +23,7 @@ int getch();
 void print_start_interface();
 void print_mode_shape(int n,int m,int x,int y,int c);
 void print_next();
-void eraser_shape(int,int,int,int,int);
+void eraser_shape(int,int,int,int);
 void print_matrix();
 void print_score_level();
 void game_over();

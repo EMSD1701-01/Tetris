@@ -1,10 +1,13 @@
+
 #include "control.h"
 #include <sys/time.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
-//#include <termios.h>
-//#include <linux/input.h>
+#include <termios.h>
+#include <linux/input.h>
+
+
 
 static int judge_shape(int n,int m,int x,int y);
 static void store_shape();
@@ -24,23 +27,23 @@ int tm = 800000;
 
 int p_x = 60,p_y = 15;
 int matrix[24][28] = {0};
-int score,level;
+int score,level = 1;
 
 
 
 //微妙定时器,定时器一旦启动，会每隔一段时间发送SIGALRM信号
 void alarm_us(int t)
 {
-//	struct itimerval value;
-//	//定时器启动的初始值
-//	value.it_value.tv_sec = 0;
-//	value.it_value.tv_usec = t;
-//
-//	//定时器启动后的间隔时间值
-//	value.it_interval.tv_sec = 0;
-//	value.it_interval.tv_usec = t;
-//
-//	setitimer(ITIMER_REAL,&value,NULL);
+	struct itimerval value;
+	//定时器启动的初始值
+	value.it_value.tv_sec = 0;
+	value.it_value.tv_usec = t;
+
+	//定时器启动后的间隔时间值
+	value.it_interval.tv_sec = 0;
+	value.it_interval.tv_usec = t;
+
+	setitimer(ITIMER_REAL,&value,NULL);
 }
 
 
@@ -58,31 +61,31 @@ void catch_signal(int signo)
 //关闭定时器
 void close_alarm()
 {
-//	struct itimerval value;
-//	//定时器启动的初始值
-//	value.it_value.tv_sec = 0;
-//	value.it_value.tv_usec = 0;
-//
-//	//定时器启动后的间隔时间值
-//	value.it_interval.tv_sec = 0;
-//	value.it_interval.tv_usec = 0;
-//	setitimer(ITIMER_REAL,&value,NULL);
+	struct itimerval value;
+	//定时器启动的初始值
+	value.it_value.tv_sec = 0;
+	value.it_value.tv_usec = 0;
+
+	//定时器启动后的间隔时间值
+	value.it_interval.tv_sec = 0;
+	value.it_interval.tv_usec = 0;
+	setitimer(ITIMER_REAL,&value,NULL);
 }
 
 
 
-//struct termios tm_old;
+struct termios tm_old;
 //获取一个字符而 不回显
 int getch()
 {
-//	struct termios tm;
-//	tcgetattr(0, &tm_old);
-//	cfmakeraw(&tm);
-//	tcsetattr(0, 0, &tm);
-//	int ch = getchar();
-//	tcsetattr(0, 0, &tm_old);
-//
-//	return ch;
+	struct termios tm;
+	tcgetattr(0, &tm_old);
+	cfmakeraw(&tm);
+	tcsetattr(0, 0, &tm);
+	int ch = getchar();
+	tcsetattr(0, 0, &tm_old);
+
+	return ch;
 }
 
 
@@ -145,7 +148,6 @@ static void store_shape()
 				a = x + 2 * j;
 				b = y + i;
 				xyconsoletobox(&a, &b);
-				// printf("a:%d, b:%d\r\n", a, b);
 				matrix[b][a * 2] = 1;
 				matrix[b][a * 2 + 1] = color;
 			}
@@ -170,9 +172,9 @@ static void new_shape()
 	num = n_num;
 	mode = n_mode;
 	color = n_color;
-//	n_num = random()%(6-0+1)+0;
-//	n_mode = random()%(3-0+1)+0;
-//	n_color = random()%(46-41+1)+41;
+	n_num = random()%(6-0+1)+0;
+	n_mode = random()%(3-0+1)+0;
+	n_color = random()%(46-41+1)+41;
 }
 
 
@@ -180,42 +182,35 @@ static void new_shape()
 //消行检测，当一行满时，进行消行操作
 static void destroy_line()
 {
-	int i, j;
-	int eraseline;
+	int i, j, k;
+	int neederase;
 	int lines = 0;
-	while (1)
+	for (i = 23; i >= 0; )
 	{
-		eraseline = 1;
-		for (i = 0; i < 14; i++)
+		neederase = 1;
+		for (j = 0; j < 28; j += 2)
 		{
-			if (matrix[23][i] == 0)
+			if (matrix[i][j] == 0)
 			{
-				eraseline = 0;
+				neederase = 0;
 				break;
 			}
 		}
-		if (eraseline == 1)
+		if (neederase == 1)
 		{
 			lines++;
-		}
-		else
-		{
-			break;
-		}
-	}
-	//检测到消行
-	if (lines > 0)
-	{
-		score += lines * 10;
-		for (i = 23 - lines; i >= 0; i--)
-		{
-			for (j = 0; i < 14; j++)
+			for (j = i; j > 0; j--)
 			{
-				matrix[i + lines][j * 2] = matrix[i][j * 2];
-				matrix[i + lines][j * 2 + 1] = matrix[i][j * 2 + 1];
+				for (k = 0; k < 28; k++)
+				{
+					matrix[j][k] = matrix[j - 1][k];
+				}
 			}
 		}
+		else
+			i--;
 	}
+	score += 10 * lines;
 }
 
 
@@ -233,6 +228,7 @@ static int is_over()
 }
 
 
+
 //图形下落函数
 static void move_shape_down()
 {
@@ -245,7 +241,7 @@ static void move_shape_down()
 		destroy_line();
 		//重新打印地图、分数
 		print_matrix();
-	//	print_score_level();
+		print_score_level();
 		//判断游戏是否结束
 		if (is_over() == 1)
 		{
@@ -253,15 +249,16 @@ static void move_shape_down()
 			close_alarm();
 		}
 		//生成新图形
+		eraser_shape(n_num, n_mode, n_x, n_y);
 		new_shape();
+		print_mode_shape(n_num, n_mode, n_x, n_y, n_color);
 		print_mode_shape(num, mode, x, y, color);
-		print_next();
 		// close_alarm();
 	}
 	else									//移动后不会触底
 	{
 		//先清理原有图形
-		eraser_shape(num, mode, x, y, color);
+		eraser_shape(num, mode, x, y);
 		y++;
 		print_mode_shape(num, mode, x, y, color);
 	}
@@ -292,7 +289,7 @@ static void fall_down()
 				step = j;
 		}
 	}
-	eraser_shape(num, mode, x, y, color);
+	eraser_shape(num, mode, x, y);
 	y += step;
 	print_mode_shape(num, mode, x, y, color);
 }
@@ -312,7 +309,7 @@ static void move_shape_left()
 	else
 	{
 		//先清理原有图形
-		eraser_shape(num, mode, x, y, color);
+		eraser_shape(num, mode, x, y);
 		x -= 2;
 		print_mode_shape(num, mode, x, y, color);
 	}
@@ -333,7 +330,7 @@ static void move_shape_right()
 	else
 	{
 		//先清理原有图形
-		eraser_shape(num, mode, x, y, color);
+		eraser_shape(num, mode, x, y);
 		x += 2;
 		print_mode_shape(num, mode, x, y, color);
 	}
@@ -353,7 +350,7 @@ static void change_shape()
 	else
 	{
 		//擦除原来的形状
-		eraser_shape(num, mode, x, y, color);
+		eraser_shape(num, mode, x, y);
 		//打印新形状
 		print_mode_shape(num, tm, x, y, color);
 		//修改当前形状为新形状
@@ -395,7 +392,7 @@ void key_control()
 				fall_down();
 				break;
 			case 32://KEY_SPACE:
-				close_alarm();
+				// close_alarm();
 				break;
 			case 113://KEY_Q:
 				game_over();
@@ -404,7 +401,6 @@ void key_control()
 			default: break;
 		}
 	}
-	
 }
 
 
