@@ -1,28 +1,5 @@
 #include "print.h"
-#include <stdio.h>
 
-
-
-/**
- * 函数声明
- */
-void clear();
-int getch();
-void print_start_interface();
-void print_mode_shape(int n,int m,int x,int y,int c);
-void eraser_shape(int,int,int,int);
-void print_matrix();
-void print_score_level();
-void game_over();
-
-
-
-
-/**
- * 从外部引用的变量
- */
-extern int matrix[24][28];
-extern int score, level;
 
 
 
@@ -85,8 +62,8 @@ int shape[7][4][18] =
  */
 #ifdef WIN32
 
-#define BOXBG			30
-#define BORDERBG		31
+#define BOXBG			40
+#define BORDERBG		41
 
 #else
 
@@ -135,7 +112,7 @@ void gotoxy(int x, int y){
 
 void print(char *str, int c)
 {
-	SetConsoleTextAttribute(hand, COLORS[c - 30]);
+	SetConsoleTextAttribute(hand, COLORS[c - 40]);
 	printf("%s", str);
 }
 

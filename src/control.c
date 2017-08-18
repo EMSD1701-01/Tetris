@@ -1,35 +1,4 @@
 #include "control.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
-
-#ifdef WIN32 //-----Windows------
-
-#include <windows.h>
-#define random() rand()
-
-#else //--------------Linux-------
-
-#include <signal.h>
-#include <linux/input.h>
-
-#endif //WIN32----------------
-
-/**
- * 全局函数声明
- */
-void init_game();
-void start_game();
-
-
-
-/**
- * 从外部应用变量
- */
-extern int shape[7][4][18];
-extern int i_x, i_y;
-extern int n_x, n_y;
-// extern int p_x = 60,p_y = 15;
 
 
 
@@ -73,8 +42,7 @@ int n_num, n_mode, n_color;		//下一图形信息
 int x, y;				//图形当前位置信息
 int tm = 800000;	//定时器间隔
 int g_GameStatus = GAMESTOP;	//当前游戏状态
-
-
+int g_upscore = 10;
 
 void init_game()
 {
@@ -88,8 +56,6 @@ void init_game()
 	key_control();
 }
 
-
-
 void start_game()
 {
 	print_mode_shape(n_num, n_mode, n_x, n_y, n_color);
@@ -98,53 +64,29 @@ void start_game()
 	print_mode_shape(num, mode, x, y, color);
 
 	//注册信号
-	//signal(SIGALRM,catch_signal);
+
+#ifdef __linux__
+	signal(SIGALRM,catch_signal);
+#endif
+
 	//开启定时器
 	alarm_us(tm);
 	//开始接受键盘消息
 }
 
-
 #ifdef WIN32 //----------------Windows----------------------
 
-#define TIMER_ID 1
-void CALLBACK TimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+UINT_PTR timerId;
+
+static void alarm_us(int t)
 {
-	catch_signal((int)dwTime);
-	sleep(1);
+	KillTimer(NULL, timerId);
+	timerId = SetTimer(NULL, 0, t / 1000, NULL);
 }
 
-DWORD CALLBACK ThreadProc(PVOID pvoid)
+static void close_alarm()
 {
-	//ǿ��ϵͳΪ�̼߳�����Ϣ����
-	MSG msg;
-	PeekMessage(&msg, NULL, WM_USER, WM_USER, PM_NOREMOVE);
-
-	SetTimer(0, TIMER_ID, 800, TimerProc);
-
-	//��ȡ���ַ���Ϣ
-	while(GetMessage(&msg, NULL, 0, 0))
-	{
-		if(msg.message == WM_TIMER)
-		{
-			TranslateMessage(&msg);    // ������Ϣ
-			DispatchMessage(&msg);     // �ַ���Ϣ
-		}
-	}
-
-	KillTimer(NULL, 10);
-	printf("thread end here\n");
-	return 0;
-}
-
-void alarm_us(int t)
-{
-	//KillTimer(NULL, TIMER_ID);
-	//SetTimer(NULL, TIMER_ID, t / 1000, TimerProc);
-}
-void close_alarm()
-{
-	//KillTimer(NULL, TIMER_ID);
+	KillTimer(NULL, timerId);
 }
 
 #else //-------------------------Linux-----------------------
@@ -163,17 +105,6 @@ static void alarm_us(int t)
 
 	setitimer(ITIMER_REAL,&value,NULL);
 }
-
-
-
-//信号注册函数
-static void catch_signal(int signo)
-{
-	//向下移动图形，一直到底部
-	move_shape_down(num,mode,color);
-	// signal(SIGALRM,catch_signal);
-}
-
 
 //关闭定时器
 static void close_alarm()
@@ -288,7 +219,7 @@ static void new_shape()
 	color = n_color;
 	n_num = random()%(6-0+1)+0;
 	n_mode = random()%(3-0+1)+0;
-	n_color = random()%(36-30+1)+31;
+	n_color = random()%(46-40+1)+41;
 }
 
 
@@ -325,6 +256,15 @@ static void destroy_line()
 			i--;
 	}
 	score += 10 * lines;
+	if (score >= level * g_upscore)
+	{
+		level++;
+		int time = tm - 200000 * level;
+		if (time == 0)
+			time = 200000;
+		close_alarm();
+		alarm_us(time);
+	}
 }
 
 
@@ -471,39 +411,87 @@ void key_control()
 	//右 方块右移
 
 #ifdef WIN32 //---------------Windows------------
-	DWORD threadId;
-	HANDLE tHandle = CreateThread(NULL, 0, ThreadProc, 0, 0, &threadId);
-	
-	while (1)
+
+#include <windows.h>
+
+	MSG msg;
+
+	while(1)
 	{
-		ch = getch();
-		switch (ch)
+		if(PeekMessage(&msg, NULL, WM_TIMER, WM_TIMER, PM_REMOVE))
 		{
-			case 72://KEY_UP:
-				change_shape();
-				break;
-			case 80://KEY_DOWN:
-				move_shape_down();
-				break;
-			case 75://KEY_LEFT:
-				move_shape_left();
-				break;
-			case 77://KEY_RIGHT:
-				move_shape_right();
-				break;
-			case 13://KEY_ENTER:
-				fall_down();
-				break;
-			case 32://KEY_SPACE:
-				// close_alarm();
-				break;
-			case 113://KEY_Q:
-				clear();
-				game_over();
-				return;
-				break;
-			default:
-				break;
+			catch_signal(0);
+		}
+
+		if(_kbhit())
+		{
+			ch = getch();
+			switch (ch)
+			{
+				case 72://KEY_UP:
+				{
+					if (g_GameStatus == GAMEON)
+						change_shape();
+					break;
+				}
+				case 80://KEY_DOWN:
+				{
+					if (g_GameStatus == GAMEON)
+						move_shape_down();
+					break;
+				}
+				case 75://KEY_LEFT:
+				{
+					if (g_GameStatus == GAMEON)
+						move_shape_left();
+					break;
+				}
+				case 77://KEY_RIGHT:
+				{
+					if (g_GameStatus == GAMEON)
+						move_shape_right();
+					break;
+				}
+				case 13://KEY_ENTER:
+				{
+					if (g_GameStatus == GAMEON)
+						fall_down();
+					break;
+				}
+				case 32://KEY_SPACE:
+				{
+					if (g_GameStatus == GAMEON)
+					{
+						g_GameStatus = GAMEPAUSE;
+						close_alarm();
+					}
+					else if (g_GameStatus == GAMEPAUSE)
+					{
+						g_GameStatus = GAMEON;
+						alarm_us(tm);
+					}
+					// close_alarm();
+					break;
+				}
+				case 113://KEY_Q:
+				{
+					game_over();
+					clear();
+					printf("\r\n");
+					return;
+					break;
+
+				}
+				default:
+				{
+					if (g_GameStatus == GAMESTOP)
+					{
+						start_game();
+						continue;
+					}
+					break;
+				}
+			}
 		}
 	}
 
