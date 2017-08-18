@@ -6,6 +6,7 @@
 
 int main() 
 {
+	//改名测试
 	//Lining commit
 	//游戏初始化
 	init_game();
