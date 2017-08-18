@@ -498,9 +498,8 @@ void key_control()
 				// close_alarm();
 				break;
 			case 113://KEY_Q:
-				game_over();
 				clear();
-				printf("\r\n");
+				game_over();
 				return;
 				break;
 			default:
