@@ -1,12 +1,11 @@
 #include "control.h"
-
-
+#include "print.h"
 
 /**
  * 全局变量
  */
 int matrix[24][28] = {0};	//画面矩阵
-int score = 0,level = 1;	//分数 等级
+int score = 0, level = 1;	//分数 等级
 
 
 /**
@@ -16,7 +15,7 @@ static void alarm_us(int t);		//微妙定时器
 static void catch_signal(int signo);	//信号注册函数
 static void key_control();
 static void close_alarm();
-static int judge_shape(int n,int m,int x,int y);
+static int judge_shape(int n, int m, int x, int y);
 static void store_shape();
 static void new_shape();
 static void destroy_line();
@@ -44,8 +43,7 @@ int tm = 800000;	//定时器间隔
 int g_GameStatus = GAMESTOP;	//当前游戏状态
 int g_upscore = 10;
 
-void init_game()
-{
+void init_game() {
 	g_GameStatus = GAMESTOP;
 	srand(time(NULL));
 	new_shape();
@@ -56,8 +54,7 @@ void init_game()
 	key_control();
 }
 
-void start_game()
-{
+void start_game() {
 	print_mode_shape(n_num, n_mode, n_x, n_y, n_color);
 
 	g_GameStatus = GAMEON;
@@ -78,14 +75,12 @@ void start_game()
 
 UINT_PTR timerId;
 
-static void alarm_us(int t)
-{
+static void alarm_us(int t) {
 	KillTimer(NULL, timerId);
 	timerId = SetTimer(NULL, 0, t / 1000, NULL);
 }
 
-static void close_alarm()
-{
+static void close_alarm() {
 	KillTimer(NULL, timerId);
 }
 
@@ -137,30 +132,27 @@ static int getch()
 #endif //WIN32-------------------------------------------
 
 //信号注册函数
-void catch_signal(int signo)
-{
+void catch_signal(int signo) {
 	//向下移动图形，一直到底部
-	move_shape_down(num,mode,color);
+	move_shape_down(num, mode, color);
 	// signal(SIGALRM,catch_signal);
 }
 
-static void xyconsoletobox(int *a, int *b)
-{
+static void xyconsoletobox(int *a, int *b) {
 	*a = (*a - 12) / 2;
 	*b = *b - 6;
 }
 
 //碰撞检测,检测方块是否碰撞到边界或其他方块
-static int judge_shape(int n,int m,int a,int b)
-{
+static int judge_shape(int n, int m, int a, int b) {
 	int xx, yy;
 	int *sp = shape[n][m];
 
 	xyconsoletobox(&a, &b);
 
-	if(a < 0) return 1; //左边界
-	if(a > 28 / 2 - (4 - sp[16])) return 1; //右边界
-	if(b > 24 - (4 - sp[17])) return 1; //下边界
+	if (a < 0) return 1; //左边界
+	if (a > 28 / 2 - (4 - sp[16])) return 1; //右边界
+	if (b > 24 - (4 - sp[17])) return 1; //下边界
 
 	/* 行 减sp[17]是为了避免图形到达边界判断matrix数组越界
 	 *
@@ -171,12 +163,10 @@ static int judge_shape(int n,int m,int a,int b)
 	 * 但是田字方块右边的方块不需要考虑也不可以考虑
 	 * 这时matrix[b][a]中横坐标(a + 3) * 2会越界
 	 */
-	for(yy = 0; yy < 4 - sp[17]; yy++)
-	{
-		for(xx = 0; xx < 4 - sp[16]; xx++)  //列
+	for (yy = 0; yy < 4 - sp[17]; yy++) {
+		for (xx = 0; xx < 4 - sp[16]; xx++)  //列
 		{
-			if((sp[yy * 4 + xx] & matrix[b + yy][(a + xx) * 2]))
-			{
+			if ((sp[yy * 4 + xx] & matrix[b + yy][(a + xx) * 2])) {
 				return 1;
 			}
 		}
@@ -187,16 +177,12 @@ static int judge_shape(int n,int m,int a,int b)
 
 
 //保存方块棋盘信息，方块落地后，需将整个方块图形进行保存
-static void store_shape()
-{
-	int i,  j;
+static void store_shape() {
+	int i, j;
 	int a, b;
-	for (i = 0; i < 4; i++)
-	{
-		for (j = 0; j < 4; j++)
-		{
-			if (shape[num][mode][4 * i + j] == 1)
-			{
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			if (shape[num][mode][4 * i + j] == 1) {
 				a = x + 2 * j;
 				b = y + i;
 				xyconsoletobox(&a, &b);
@@ -210,54 +196,44 @@ static void store_shape()
 
 
 //生成新图形
-static void new_shape()
-{
+static void new_shape() {
 	x = i_x;
 	y = i_y;
 	num = n_num;
 	mode = n_mode;
 	color = n_color;
-	n_num = random()%(6-0+1)+0;
-	n_mode = random()%(3-0+1)+0;
-	n_color = random()%(46-40+1)+41;
+	n_num = random() % (6 - 0 + 1) + 0;
+	n_mode = random() % (3 - 0 + 1) + 0;
+	n_color = random() % (46 - 40 + 1) + 41;
 }
 
 
 
 //消行检测，当一行满时，进行消行操作
-static void destroy_line()
-{
+static void destroy_line() {
 	int i, j, k;
 	int neederase;
 	int lines = 0;
-	for (i = 23; i >= 0; )
-	{
+	for (i = 23; i >= 0;) {
 		neederase = 1;
-		for (j = 0; j < 28; j += 2)
-		{
-			if (matrix[i][j] == 0)
-			{
+		for (j = 0; j < 28; j += 2) {
+			if (matrix[i][j] == 0) {
 				neederase = 0;
 				break;
 			}
 		}
-		if (neederase == 1)
-		{
+		if (neederase == 1) {
 			lines++;
-			for (j = i; j > 0; j--)
-			{
-				for (k = 0; k < 28; k++)
-				{
+			for (j = i; j > 0; j--) {
+				for (k = 0; k < 28; k++) {
 					matrix[j][k] = matrix[j - 1][k];
 				}
 			}
-		}
-		else
+		} else
 			i--;
 	}
 	score += 10 * lines;
-	if (score >= level * g_upscore)
-	{
+	if (score >= level * g_upscore) {
 		level++;
 		int time = tm - 200000 * level;
 		if (time == 0)
@@ -268,15 +244,11 @@ static void destroy_line()
 }
 
 
-
 //判断游戏是否结束
-static int is_over()
-{
+static int is_over() {
 	int i;
-	for (i = 5; i < 9; i++)
-	{
-		if (matrix[0][i * 2] == 1)
-		{
+	for (i = 5; i < 9; i++) {
+		if (matrix[0][i * 2] == 1) {
 			g_GameStatus = GAMEOVER;
 			return 1;
 		}
@@ -284,10 +256,27 @@ static int is_over()
 	return 0;
 }
 
+//显示提示方块
+static void print_hint_shape() 
+{
+	int step = 1;
+	for (step; judge_shape(num, mode, x, y + step) != 1; step++);
+	step--;
+	print_mode_shape(num, mode, x, y + step, 33);
+}
+
+//消除提示方块
+static void erase_hint_shape()
+{
+	int step = 1;
+	for (step; judge_shape(num, mode, x, y + step) != 1; step++);
+	step--;
+	eraser_shape(num, mode, x, y + step);
+}
 
 
 //图形下落函数
-static void move_shape_down()
+static void move_shape_down() 
 {
 	//首先判断，图形有没有触底
 	if (judge_shape(num, mode, x, y + 1) == 1)		//触底
@@ -300,8 +289,7 @@ static void move_shape_down()
 		print_matrix();
 		print_score_level();
 		//判断游戏是否结束
-		if (is_over() == 1)
-		{
+		if (is_over() == 1) {
 			game_over();
 			close_alarm();
 		}
@@ -311,23 +299,23 @@ static void move_shape_down()
 		print_mode_shape(num, mode, x, y, color);
 		print_mode_shape(n_num, n_mode, n_x, n_y, n_color);
 		// close_alarm();
-	}
-	else									//移动后不会触底
+	} else									//移动后不会触底
 	{
 		//先清理原有图形
+		erase_hint_shape();
 		eraser_shape(num, mode, x, y);
 		y++;
 		print_mode_shape(num, mode, x, y, color);
+		print_hint_shape();
 	}
 }
 
 
 
-static void fall_down()
-{
+static void fall_down() {
 	//直接落地
 	int step = 1;
-	for (step; judge_shape(num, mode, x, y + step) != 1; step++) ;
+	for (step; judge_shape(num, mode, x, y + step) != 1; step++);
 	step--;
 	eraser_shape(num, mode, x, y);
 	y += step;
@@ -337,69 +325,67 @@ static void fall_down()
 
 
 //方块左移
-static void move_shape_left()
-{
+static void move_shape_left() {
 	//如果越界，返回
 	//检测碰撞
 	if (judge_shape(num, mode, x - 2, y) == 1)		//撞墙
 	{
-		return ;
+		return;
 	}
 	//消除当前图形 左移 打印
-	else
-	{
+	else {
 		//先清理原有图形
+		erase_hint_shape();
 		eraser_shape(num, mode, x, y);
 		x -= 2;
 		print_mode_shape(num, mode, x, y, color);
+		print_hint_shape();
 	}
 }
 
 
 
 //方块右移
-static void move_shape_right()
-{
+static void move_shape_right() {
 	//如果越界，返回
 	//检测碰撞
 	if (judge_shape(num, mode, x + 2, y) == 1)		//撞墙
 	{
-		return ;
+		return;
 	}
 	//消除当前图形 左移 打印
-	else
-	{
+	else {
 		//先清理原有图形
+		erase_hint_shape();
 		eraser_shape(num, mode, x, y);
 		x += 2;
 		print_mode_shape(num, mode, x, y, color);
+		print_hint_shape();
 	}
 }
 
 
 
 //方块变形
-static void change_shape()
-{
+static void change_shape() {
 	//获取下一个可变换的状态
 	int tm = mode < 3 ? mode + 1 : 0;
-	if(judge_shape(num, tm, x, y) == 1)
-	{
+	if (judge_shape(num, tm, x, y) == 1) {
 		//变换产生碰撞
-	}
-	else
-	{
+	} else {
 		//擦除原来的形状
+		erase_hint_shape();
 		eraser_shape(num, mode, x, y);
 		//打印新形状
 		print_mode_shape(num, tm, x, y, color);
+		
 		//修改当前形状为新形状
 		mode = tm;
+		print_hint_shape();
 	}
 }
 
-void key_control()
-{
+void key_control() {
 	static int count;
 	int ch;
 	//q退出
@@ -416,81 +402,73 @@ void key_control()
 
 	MSG msg;
 
-	while(1)
-	{
-		if(PeekMessage(&msg, NULL, WM_TIMER, WM_TIMER, PM_REMOVE))
-		{
+	while (1) {
+		if (PeekMessage(&msg, NULL, WM_TIMER, WM_TIMER, PM_REMOVE)) {
 			catch_signal(0);
 		}
 
-		if(_kbhit())
-		{
+		if (_kbhit()) {
 			ch = getch();
-			switch (ch)
+			switch (ch) {
+			case 72://KEY_UP:
 			{
-				case 72://KEY_UP:
-				{
-					if (g_GameStatus == GAMEON)
-						change_shape();
-					break;
-				}
-				case 80://KEY_DOWN:
-				{
-					if (g_GameStatus == GAMEON)
-						move_shape_down();
-					break;
-				}
-				case 75://KEY_LEFT:
-				{
-					if (g_GameStatus == GAMEON)
-						move_shape_left();
-					break;
-				}
-				case 77://KEY_RIGHT:
-				{
-					if (g_GameStatus == GAMEON)
-						move_shape_right();
-					break;
-				}
-				case 13://KEY_ENTER:
-				{
-					if (g_GameStatus == GAMEON)
-						fall_down();
-					break;
-				}
-				case 32://KEY_SPACE:
-				{
-					if (g_GameStatus == GAMEON)
-					{
-						g_GameStatus = GAMEPAUSE;
-						close_alarm();
-					}
-					else if (g_GameStatus == GAMEPAUSE)
-					{
-						g_GameStatus = GAMEON;
-						alarm_us(tm);
-					}
-					// close_alarm();
-					break;
-				}
-				case 113://KEY_Q:
-				{
-					game_over();
-					clear();
-					printf("\r\n");
-					return;
-					break;
+						if (g_GameStatus == GAMEON)
+							change_shape();
+						break;
+			}
+			case 80://KEY_DOWN:
+			{
+						if (g_GameStatus == GAMEON)
+							move_shape_down();
+						break;
+			}
+			case 75://KEY_LEFT:
+			{
+						if (g_GameStatus == GAMEON)
+							move_shape_left();
+						break;
+			}
+			case 77://KEY_RIGHT:
+			{
+						if (g_GameStatus == GAMEON)
+							move_shape_right();
+						break;
+			}
+			case 13://KEY_ENTER:
+			{
+						if (g_GameStatus == GAMEON)
+							fall_down();
+						break;
+			}
+			case 32://KEY_SPACE:
+			{
+						if (g_GameStatus == GAMEON) {
+							g_GameStatus = GAMEPAUSE;
+							close_alarm();
+						} else if (g_GameStatus == GAMEPAUSE) {
+							g_GameStatus = GAMEON;
+							alarm_us(tm);
+						}
+						// close_alarm();
+						break;
+			}
+			case 113://KEY_Q:
+			{
+						 game_over();
+						 clear();
+						 printf("\r\n");
+						 return;
+						 break;
 
-				}
-				default:
-				{
-					if (g_GameStatus == GAMESTOP)
-					{
-						start_game();
-						continue;
-					}
-					break;
-				}
+			}
+			default:
+			{
+					   if (g_GameStatus == GAMESTOP) {
+						   start_game();
+						   continue;
+					   }
+					   break;
+			}
 			}
 		}
 	}
@@ -503,69 +481,69 @@ void key_control()
 
 		switch (ch)
 		{
-			case 65://KEY_UP:
-			{
-				if (g_GameStatus == GAMEON)
-					change_shape();
-				break;
-			}
-			case 66://KEY_DOWN:
-			{
-				if (g_GameStatus == GAMEON)
-					move_shape_down();
-				break;
-			}
-			case 68://KEY_LEFT:
-			{
-				if (g_GameStatus == GAMEON)
-					move_shape_left();
-				break;
-			}
-			case 67://KEY_RIGHT:
-			{
-				if (g_GameStatus == GAMEON)
-					move_shape_right();
-				break;
-			}
-			case 13://KEY_ENTER:
-			{
-				if (g_GameStatus == GAMEON)
-					fall_down();
-				break;
-			}
-			case 32://KEY_SPACE:
-			{
-				if (g_GameStatus == GAMEON)
-				{
-					g_GameStatus = GAMEPAUSE;
-					close_alarm();
-				}
-				else if (g_GameStatus == GAMEPAUSE)
-				{
-					g_GameStatus = GAMEON;
-					alarm_us(tm);
-				}
-				// close_alarm();
-				break;
-			}
-			case 113://KEY_Q:
-			{
-				game_over();
-				clear();
-				printf("\r\n");
-				return;
-				break;
+		case 65://KEY_UP:
+		{
+					if (g_GameStatus == GAMEON)
+						change_shape();
+					break;
+		}
+		case 66://KEY_DOWN:
+		{
+					if (g_GameStatus == GAMEON)
+						move_shape_down();
+					break;
+		}
+		case 68://KEY_LEFT:
+		{
+					if (g_GameStatus == GAMEON)
+						move_shape_left();
+					break;
+		}
+		case 67://KEY_RIGHT:
+		{
+					if (g_GameStatus == GAMEON)
+						move_shape_right();
+					break;
+		}
+		case 13://KEY_ENTER:
+		{
+					if (g_GameStatus == GAMEON)
+						fall_down();
+					break;
+		}
+		case 32://KEY_SPACE:
+		{
+					if (g_GameStatus == GAMEON)
+					{
+						g_GameStatus = GAMEPAUSE;
+						close_alarm();
+					}
+					else if (g_GameStatus == GAMEPAUSE)
+					{
+						g_GameStatus = GAMEON;
+						alarm_us(tm);
+					}
+					// close_alarm();
+					break;
+		}
+		case 113://KEY_Q:
+		{
+					 game_over();
+					 clear();
+					 printf("\r\n");
+					 return;
+					 break;
 
-			}
-			default:
-			{
-				if (g_GameStatus == GAMESTOP)
-				{
-					start_game();
-					continue;
-				}
-				break;
-			}
+		}
+		default:
+		{
+				   if (g_GameStatus == GAMESTOP)
+				   {
+					   start_game();
+					   continue;
+				   }
+				   break;
+		}
 		}
 	}
 
