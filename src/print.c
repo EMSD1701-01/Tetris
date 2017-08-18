@@ -1,8 +1,5 @@
 #include "print.h"
 
-
-
-
 /**
  * 全局变量
  */
