@@ -6,6 +6,7 @@
 
 int main() 
 {
+	//Lining commit
 	//游戏初始化
 	init_game();
 
