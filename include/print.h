@@ -1,14 +1,10 @@
 #ifndef _PRINT_H_
 #define _PRINT_H_
 
-
-
 extern int s_x;
 extern int s_y;
 extern int l_x;
 extern int l_y;
-
-
 
 extern int num,mode,color;
 extern int n_num,n_mode,n_color;

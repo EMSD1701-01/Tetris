@@ -1,22 +1,19 @@
 #include "control.h"
-#include <sys/time.h>
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifdef WIN32
+#ifdef WIN32 //-----Windows------
 
 #include <windows.h>
+#define random() rand()
 
-#else
+#else //--------------Linux-------
 
 #include <signal.h>
 #include <linux/input.h>
+#include <sys/time.h>
 
-
-
-#endif
-
-
+#endif //WIN32----------------
 
 static int judge_shape(int n,int m,int x,int y);
 static void store_shape();
@@ -30,8 +27,6 @@ static void move_shape_left();
 static void move_shape_right();
 static void change_shape();
 
-
-
 int tm = 800000;
 
 int p_x = 60,p_y = 15;
@@ -39,6 +34,49 @@ int matrix[24][28] = {0};
 int score,level = 1;
 
 
+#ifdef WIN32 //----------------Windows----------------------
+
+#define TIMER_ID 1
+void CALLBACK TimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	catch_signal((int)dwTime);
+	sleep(1);
+}
+
+DWORD CALLBACK ThreadProc(PVOID pvoid)
+{
+	//ǿ��ϵͳΪ�̼߳�����Ϣ����
+	MSG msg;
+	PeekMessage(&msg, NULL, WM_USER, WM_USER, PM_NOREMOVE);
+
+	SetTimer(0, TIMER_ID, 800, TimerProc);
+
+	//��ȡ���ַ���Ϣ
+	while(GetMessage(&msg, NULL, 0, 0))
+	{
+		if(msg.message == WM_TIMER)
+		{
+			TranslateMessage(&msg);    // ������Ϣ
+			DispatchMessage(&msg);     // �ַ���Ϣ
+		}
+	}
+
+	KillTimer(NULL, 10);
+	printf("thread end here\n");
+	return 0;
+}
+
+void alarm_us(int t)
+{
+	//KillTimer(NULL, TIMER_ID);
+	//SetTimer(NULL, TIMER_ID, t / 1000, TimerProc);
+}
+void close_alarm()
+{
+	//KillTimer(NULL, TIMER_ID);
+}
+
+#else //-------------------------Linux-----------------------
 
 //微妙定时器,定时器一旦启动，会每隔一段时间发送SIGALRM信号
 void alarm_us(int t)
@@ -55,18 +93,6 @@ void alarm_us(int t)
 	setitimer(ITIMER_REAL,&value,NULL);
 }
 
-
-
-//信号注册函数
-void catch_signal(int signo)
-{
-	//向下移动图形，一直到底部
-	move_shape_down(num,mode,color);
-	// signal(SIGALRM,catch_signal);
-}
-
-
-
 //关闭定时器
 void close_alarm()
 {
@@ -80,8 +106,6 @@ void close_alarm()
 	value.it_interval.tv_usec = 0;
 	setitimer(ITIMER_REAL,&value,NULL);
 }
-
-
 
 struct termios tm_old;
 //获取一个字符而 不回显
@@ -97,15 +121,21 @@ int getch()
 	return ch;
 }
 
+#endif //WIN32-------------------------------------------
 
+//信号注册函数
+void catch_signal(int signo)
+{
+	//向下移动图形，一直到底部
+	move_shape_down(num,mode,color);
+	// signal(SIGALRM,catch_signal);
+}
 
 static void xyconsoletobox(int *a, int *b)
 {
 	*a = (*a - 12) / 2;
 	*b = *b - 6;
 }
-
-
 
 //碰撞检测,检测方块是否碰撞到边界或其他方块
 static int judge_shape(int n,int m,int a,int b)
@@ -114,20 +144,20 @@ static int judge_shape(int n,int m,int a,int b)
 	int *sp = shape[n][m];
 
 	xyconsoletobox(&a, &b);
-	
-	if(a < 0) return 1; //左边界 
-	if(a > 28 / 2 - (4 - sp[16])) return 1; //右边界 
-	if(b > 24 - (4 - sp[17])) return 1; //下边界 
-	
-	/* 行 减sp[17]是为了避免图形到达边界判断matrix数组越界 
+
+	if(a < 0) return 1; //左边界
+	if(a > 28 / 2 - (4 - sp[16])) return 1; //右边界
+	if(b > 24 - (4 - sp[17])) return 1; //下边界
+
+	/* 行 减sp[17]是为了避免图形到达边界判断matrix数组越界
 	 *
 	 *      [][]#
 	 *      [][]#
-	 *  
+	 *
 	 * 假设如图#代表墙壁，田字方块到达右边界，
 	 * 但是田字方块右边的方块不需要考虑也不可以考虑
 	 * 这时matrix[b][a]中横坐标(a + 3) * 2会越界
-	 */ 
+	 */
 	for(yy = 0; yy < 4 - sp[17]; yy++)
 	{
 		for(xx = 0; xx < 4 - sp[16]; xx++)  //列
@@ -335,7 +365,7 @@ static void change_shape()
 {
 	//获取下一个可变换的状态
 	int tm = mode < 3 ? mode + 1 : 0;
-	if(judge_shape(num, tm, x, y) == 1)  
+	if(judge_shape(num, tm, x, y) == 1)
 	{
 		//变换产生碰撞
 	}
@@ -350,8 +380,6 @@ static void change_shape()
 	}
 }
 
-
-
 void key_control()
 {
 	static int count;
@@ -363,6 +391,47 @@ void key_control()
 	//下 方块下移
 	//左 方块左移
 	//右 方块右移
+
+#ifdef WIN32 //---------------Windows------------
+	DWORD threadId;
+	HANDLE tHandle = CreateThread(NULL, 0, ThreadProc, 0, 0, &threadId);
+	
+	while (1)
+	{
+		ch = getch();
+		switch (ch)
+		{
+			case 72://KEY_UP:
+				change_shape();
+				break;
+			case 80://KEY_DOWN:
+				move_shape_down();
+				break;
+			case 75://KEY_LEFT:
+				move_shape_left();
+				break;
+			case 77://KEY_RIGHT:
+				move_shape_right();
+				break;
+			case 13://KEY_ENTER:
+				fall_down();
+				break;
+			case 32://KEY_SPACE:
+				// close_alarm();
+				break;
+			case 113://KEY_Q:
+				game_over();
+				clear();
+				printf("\r\n");
+				return;
+				break;
+			default:
+				break;
+		}
+	}
+
+#else
+
 	while (1)
 	{
 		ch = getch();
@@ -392,9 +461,14 @@ void key_control()
 				printf("\r\n");
 				return;
 				break;
-			default: break;
+			default:
+				break;
 		}
 	}
+
+#endif //WIN32-----------------------------------
+
+
 }
 
 

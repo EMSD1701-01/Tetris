@@ -5,13 +5,20 @@
 #include "control.h"
 extern int x,y;
 
+#ifdef WIN32 //--------Windows---------------
+
+#include <windows.h>
+#define random() rand()
+
+#endif //------------------------------------
+
 void init_game()
 {
 	//初始化游戏界面
 	print_start_interface();
 
 	//获取任意字符，游戏开始
-	int ch = getch();
+	int ch = getch(); 
 
 	//在指定位置出现一个随机生成一个 图形
 	srand(time(NULL));
@@ -33,13 +40,16 @@ void init_game()
 	print_next();
 }
 
-int main()
+int main() 
 {
 	//游戏初始化
 	init_game();
 
 	//注册信号
+#ifdef __linux__ //---------Linux--------------
 	signal(SIGALRM,catch_signal);
+#endif //__linux__--------------------------------
+
 	//开启定时器
 	alarm_us(tm);
 

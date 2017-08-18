@@ -1,15 +1,10 @@
 #include "print.h"
 #include <stdio.h>
-#include <termios.h>
-
-
 
 int s_x = 9+2+28+2+4;
 int s_y = 4+1+6+1+5;
 int l_x = 9+2+28+2+4;
 int l_y = 4+1+6+1+10;
-
-
 
 int num, mode, color;
 int n_num, n_mode, n_color;
@@ -74,9 +69,16 @@ int shape[7][4][18] =
 
 #define random() rand()
 
-
-const int COLORS[6] = {
-	0xf0,0xf0,0xf0,0x0f,0xf0,0xf0
+const int COLORS[8] = {
+	BACKGROUND_GREEN|BACKGROUND_BLUE,
+	
+	FOREGROUND_RED|FOREGROUND_INTENSITY,
+	FOREGROUND_GREEN|FOREGROUND_INTENSITY,
+	FOREGROUND_BLUE|FOREGROUND_INTENSITY,
+	FOREGROUND_RED|FOREGROUND_GREEN|FOREGROUND_INTENSITY,
+	FOREGROUND_GREEN|FOREGROUND_BLUE|FOREGROUND_INTENSITY,
+	FOREGROUND_BLUE|FOREGROUND_RED|FOREGROUND_INTENSITY,
+	FOREGROUND_RED|FOREGROUND_BLUE|FOREGROUND_GREEN|FOREGROUND_INTENSITY
 };
 
 
@@ -92,15 +94,13 @@ void gotoxy(int x, int y){
 
 void print(char *str, int c)
 {
-	SetConsoleTextAttribute(hand, COLORS[c - 41]);
+	SetConsoleTextAttribute(hand, COLORS[c - 40]);
 	printf("%s", str);
 }
-
 
 void clear(){
 	system("cls");
 }
-
 
 void setCursorVisable(int v){
 	CONSOLE_CURSOR_INFO cursor_info = {100, v};
@@ -137,15 +137,11 @@ void setCursorVisable(int v){
 
 #endif
 
-
-
 void printxy(char *str, int color, int x, int y)
 {
 	gotoxy(x, y);
 	print(str, color);
 }
-
-
 
 char *i2a(int num, char *buf)
 {
@@ -164,8 +160,6 @@ char *i2a(int num, char *buf)
 	buf[index] = '\0';
 	return buf;
 }
-
-
 
 void print_start_interface()
 {
@@ -186,30 +180,30 @@ void print_start_interface()
 	{
 		a = 10;
 		b = l;
-		printxy("  ", 45, a, b);
+		printxy("  ", 40, a, b);
 		a = 40;
-		printxy("  ", 45, a, b);
+		printxy("  ", 40, a, b);
 		a = 58;
-		printxy("  ", 45, a, b);
+		printxy("  ", 40, a, b);
 	}
 	for (w = 10; w < 59; w++)
 	{
 		a=w;
 		b=5;
-		printxy("  ", 45, a, b);
+		printxy("  ", 40, a, b);
 		b=30;
-		printxy("  ", 45, a, b);
+		printxy("  ", 40, a, b);
 	}
 	//打印分数等级位置
-	printxy("Score: 0", 40, s_x, s_y);
-	printxy("Level: 1", 40, l_x, l_y);
+	printxy("Score: 0", 41, s_x, s_y);
+	printxy("Level: 1", 41, l_x, l_y);
 	//打印边框 行，（5,10-58） （30，10-58）
 	//打印另外一行，（12，42-56）
 	for(w=40;w<59;w++)
 	{	
 		 b=12;
 		 a=w;
-		 printxy("  ", 45, a, b);
+		 printxy("  ", 40, a, b);
 	}
 	//打印边框 列三条（5-31,10）（5-31,40）（5-31,56）
 	//隐藏光标
@@ -262,14 +256,12 @@ void eraser_shape(int n, int m, int x, int y)
 		}
 		if(shape[n][m][i]==1)
 		{
-			printxy("  ", 40, m_x, m_y);
+			printxy("  ", 41, m_x, m_y);
 		}
 		m_x = m_x + 2;
 	}
 	fflush(NULL);
 }
-
-
 
 
 //输出下一个将要出现的图形
@@ -304,7 +296,7 @@ void print_matrix()
 		{
 			if (matrix[w][l] == 0)
 			{
-				printxy("  ", 40, l + 12, w + 6);
+				printxy("  ", 41, l + 12, w + 6);
 			}
 			else
 			{
@@ -320,8 +312,8 @@ void print_matrix()
 //打印方块分数及等级
 void print_score_level()
 {
-	printxy(itoa(score, num_buf, 10), 40, s_x + 7, s_y);
-	printxy(itoa(level, num_buf, 10), 40, l_x + 7, l_y);
+	printxy(itoa(score, num_buf, 10), 41, s_x + 7, s_y);
+	printxy(itoa(level, num_buf, 10), 41, l_x + 7, l_y);
 	fflush(NULL);
 }
 
