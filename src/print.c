@@ -1,20 +1,37 @@
 #include "print.h"
 #include <stdio.h>
 
-int s_x = 9+2+28+2+4;
-int s_y = 4+1+6+1+5;
-int l_x = 9+2+28+2+4;
-int l_y = 4+1+6+1+10;
-
-int num, mode, color;
-int n_num, n_mode, n_color;
-int i_x = 9+2+28/2-1, i_y = 6;
-int n_x = 46, n_y = 8;
-int x, y;
-char num_buf[10];
 
 
+/**
+ * 函数声明
+ */
+void clear();
+int getch();
+void print_start_interface();
+void print_mode_shape(int n,int m,int x,int y,int c);
+void eraser_shape(int,int,int,int);
+void print_matrix();
+void print_score_level();
+void game_over();
 
+
+
+
+/**
+ * 从外部引用的变量
+ */
+extern int matrix[24][28];
+extern int score, level;
+
+
+
+/**
+ * 全局变量
+ */
+int i_x = 9+2+28/2-1, i_y = 6;		//新图形初始位置
+int n_x = 46, n_y = 8;		//下一图形显示位置
+// int p_x = 60,p_y = 15;	//调试显示信息位置
 //shape[][][16]:距离 右侧空格项  [17]:距离 下方空格项
 int shape[7][4][18] = 
 	{
@@ -63,6 +80,30 @@ int shape[7][4][18] =
 
 
 
+/**
+ * 文件作用域变量、宏
+ */
+#ifdef WIN32
+
+#define BOXBG			31
+#define BORDERBG		30
+
+#else
+
+#define BOXBG			0
+#define BORDERBG		46
+
+#endif
+
+int s_x = 9+2+28+2+4, s_y = 4+1+8+1+5;	//打印分数的位置
+int l_x = 9+2+28+2+4, l_y = 4+1+8+1+10;	//打印关卡级别的位置
+char num_buf[10];		//数字转字符串专用buffer
+
+
+
+/**
+ * 跨平台特性
+ */
 #ifdef WIN32 //Windows
 #include <windows.h>
 
@@ -94,7 +135,7 @@ void gotoxy(int x, int y){
 
 void print(char *str, int c)
 {
-	SetConsoleTextAttribute(hand, COLORS[c - 40]);
+	SetConsoleTextAttribute(hand, COLORS[c - 30]);
 	printf("%s", str);
 }
 
@@ -180,30 +221,32 @@ void print_start_interface()
 	{
 		a = 10;
 		b = l;
-		printxy("  ", 40, a, b);
+
+		printxy("  ", BORDERBG, a, b);
 		a = 40;
-		printxy("  ", 40, a, b);
+		printxy("  ", BORDERBG, a, b);
 		a = 58;
-		printxy("  ", 40, a, b);
+		printxy("  ", BORDERBG, a, b);
 	}
 	for (w = 10; w < 59; w++)
 	{
 		a=w;
 		b=5;
-		printxy("  ", 40, a, b);
+		printxy("  ", BORDERBG, a, b);
 		b=30;
-		printxy("  ", 40, a, b);
+		printxy("  ", BORDERBG, a, b);
 	}
 	//打印分数等级位置
-	printxy("Score: 0", 41, s_x, s_y);
-	printxy("Level: 1", 41, l_x, l_y);
+	printxy("Score: 0", BOXBG, s_x, s_y);
+	printxy("Level: 1", BOXBG, l_x, l_y);
+
 	//打印边框 行，（5,10-58） （30，10-58）
 	//打印另外一行，（12，42-56）
-	for(w=40;w<59;w++)
+	for (w = 40; w < 59; w++)
 	{	
-		 b=12;
-		 a=w;
-		 printxy("  ", 40, a, b);
+		 b = 14;
+		 a = w;
+		 printxy("  ", BORDERBG, a, b);
 	}
 	//打印边框 列三条（5-31,10）（5-31,40）（5-31,56）
 	//隐藏光标
@@ -227,7 +270,7 @@ void print_mode_shape(int n, int m, int x, int y, int c)
 		{
 			m_x = x;
 			m_y++;
-		}	
+		}
 		if(shape[n][m][i] == 1)
 		{
 			printxy("[]", c, m_x, m_y);
@@ -256,21 +299,12 @@ void eraser_shape(int n, int m, int x, int y)
 		}
 		if(shape[n][m][i]==1)
 		{
-			printxy("  ", 41, m_x, m_y);
+			printxy("  ", BOXBG, m_x, m_y);
 		}
 		m_x = m_x + 2;
 	}
 	fflush(NULL);
 }
-
-
-//输出下一个将要出现的图形
-void print_next()
-{
-	print_mode_shape(n_num, n_mode, n_x, n_y, n_color);
-}
-
-
 
 void game_over()
 {
@@ -278,7 +312,6 @@ void game_over()
 	int a = 9 + 2 + 10;
 	int b = 4 + 1 + 9 + 1;
 	printxy(" Game Over!!", 45, a, b);
-	setCursorVisable(1);
 	fflush(NULL);
 	return ;
 }
@@ -296,7 +329,9 @@ void print_matrix()
 		{
 			if (matrix[w][l] == 0)
 			{
-				printxy("  ", 41, l + 12, w + 6);
+
+				printxy("  ", BOXBG, l + 12, w + 6);
+
 			}
 			else
 			{
@@ -312,8 +347,8 @@ void print_matrix()
 //打印方块分数及等级
 void print_score_level()
 {
-	printxy(itoa(score, num_buf, 10), 41, s_x + 7, s_y);
-	printxy(itoa(level, num_buf, 10), 41, l_x + 7, l_y);
+	printxy(i2a(score, num_buf), BOXBG, s_x + 7, s_y);
+	printxy(i2a(level, num_buf), BOXBG, l_x + 7, l_y);
 	fflush(NULL);
 }
 
