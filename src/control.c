@@ -6,12 +6,46 @@
 #include <signal.h>
 #include <termios.h>
 #include <linux/input.h>
+#include <time.h>
 
 
 
+/**
+ * 全局函数声明
+ */
+void init_game();
+void start_game();
+
+
+
+/**
+ * 从外部应用变量
+ */
+extern int shape[7][4][18];
+extern int i_x, i_y;
+extern int n_x, n_y;
+// extern int p_x = 60,p_y = 15;
+
+
+
+/**
+ * 全局变量
+ */
+int matrix[24][28] = {0};	//画面矩阵
+int score = 0,level = 1;	//分数 等级
+
+
+
+/**
+ * 文件作用域函数声明
+ */
+static void alarm_us(int t);		//微妙定时器
+static void catch_signal(int signo);	//信号注册函数
+static void key_control();
+static void close_alarm();
+static int getch();
 static int judge_shape(int n,int m,int x,int y);
 static void store_shape();
-// static void init_shape();
 static void new_shape();
 static void destroy_line();
 static int is_over();
@@ -23,16 +57,55 @@ static void change_shape();
 
 
 
-int tm = 800000;
+/**
+ * 文件作用域变量、宏
+ */
+#define GAMESTOP			1
+#define GAMEON				2
+#define GAMEPAUSE			3
+#define GAMEOVER 			4
+#define GAMEAGAIN			5
 
-int p_x = 60,p_y = 15;
-int matrix[24][28] = {0};
-int score,level = 1;
+int num, mode, color;			//当前图形信息
+int n_num, n_mode, n_color;		//下一图形信息
+int x, y;				//图形当前位置信息
+int tm = 800000;	//定时器间隔
+int g_GameStatus = GAMESTOP;	//当前游戏状态
+
+
+
+void init_game()
+{
+	g_GameStatus = GAMESTOP;
+	srand(time(NULL));
+	new_shape();
+	new_shape();
+	//初始化游戏界面
+	print_start_interface();
+	print_matrix();
+	key_control();
+}
+
+
+
+void start_game()
+{
+	print_mode_shape(n_num, n_mode, n_x, n_y, n_color);
+
+	g_GameStatus = GAMEON;
+	print_mode_shape(num, mode, x, y, color);
+
+	//注册信号
+	signal(SIGALRM,catch_signal);
+	//开启定时器
+	alarm_us(tm);
+	//开始接受键盘消息
+}
 
 
 
 //微妙定时器,定时器一旦启动，会每隔一段时间发送SIGALRM信号
-void alarm_us(int t)
+static void alarm_us(int t)
 {
 	struct itimerval value;
 	//定时器启动的初始值
@@ -49,7 +122,7 @@ void alarm_us(int t)
 
 
 //信号注册函数
-void catch_signal(int signo)
+static void catch_signal(int signo)
 {
 	//向下移动图形，一直到底部
 	move_shape_down(num,mode,color);
@@ -59,7 +132,7 @@ void catch_signal(int signo)
 
 
 //关闭定时器
-void close_alarm()
+static void close_alarm()
 {
 	struct itimerval value;
 	//定时器启动的初始值
@@ -74,10 +147,10 @@ void close_alarm()
 
 
 
-struct termios tm_old;
 //获取一个字符而 不回显
-int getch()
+static int getch()
 {
+	struct termios tm_old;
 	struct termios tm;
 	tcgetattr(0, &tm_old);
 	cfmakeraw(&tm);
@@ -157,13 +230,6 @@ static void store_shape()
 
 
 
-// //初始化棋盘
-// static void init_shape()
-// {
-// 	//当方块下落到底部时，控制区产生新的方块
-// 	//打印下移方块
-// }
-
 //生成新图形
 static void new_shape()
 {
@@ -174,7 +240,7 @@ static void new_shape()
 	color = n_color;
 	n_num = random()%(6-0+1)+0;
 	n_mode = random()%(3-0+1)+0;
-	n_color = random()%(46-41+1)+41;
+	n_color = random()%(36-30+1)+31;
 }
 
 
@@ -222,7 +288,10 @@ static int is_over()
 	for (i = 5; i < 9; i++)
 	{
 		if (matrix[0][i * 2] == 1)
+		{
+			g_GameStatus = GAMEOVER;
 			return 1;
+		}
 	}
 	return 0;
 }
@@ -357,33 +426,71 @@ void key_control()
 	while (1)
 	{
 		ch = getch();
+
 		switch (ch)
 		{
 			case 65://KEY_UP:
-				change_shape();
+			{
+				if (g_GameStatus == GAMEON)
+					change_shape();
 				break;
+			}
 			case 66://KEY_DOWN:
-				move_shape_down();
+			{
+				if (g_GameStatus == GAMEON)
+					move_shape_down();
 				break;
+			}
 			case 68://KEY_LEFT:
-				move_shape_left();
+			{
+				if (g_GameStatus == GAMEON)
+					move_shape_left();
 				break;
+			}
 			case 67://KEY_RIGHT:
-				move_shape_right();
+			{
+				if (g_GameStatus == GAMEON)
+					move_shape_right();
 				break;
+			}
 			case 13://KEY_ENTER:
-				fall_down();
+			{
+				if (g_GameStatus == GAMEON)
+					fall_down();
 				break;
+			}
 			case 32://KEY_SPACE:
+			{
+				if (g_GameStatus == GAMEON)
+				{
+					g_GameStatus = GAMEPAUSE;
+					close_alarm();
+				}
+				else if (g_GameStatus == GAMEPAUSE)
+				{
+					g_GameStatus = GAMEON;
+					alarm_us(tm);
+				}
 				// close_alarm();
 				break;
+			}
 			case 113://KEY_Q:
+			{
 				game_over();
 				clear();
 				printf("\r\n");
 				return;
 				break;
-			default: break;
+			}
+			default:
+			{
+				if (g_GameStatus == GAMESTOP)
+				{
+					start_game();
+					continue;
+				}
+				break;
+			}
 		}
 	}
 }
