@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#ifdef WIN32 //-----Windows------
+#ifdef _WIN32 //-----Windows------
 
 #include <windows.h>
 #define random() rand()
@@ -18,7 +18,7 @@
 #include <linux/input.h>
 #include <termios.h>
 
-#endif //WIN32----------------
+#endif //_WIN32----------------
 
 /**
  * 全局函数声明
