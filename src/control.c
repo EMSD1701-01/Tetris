@@ -262,7 +262,11 @@ static void print_hint_shape()
 	int step = 1;
 	for (step; judge_shape(num, mode, x, y + step) != 1; step++);
 	step--;
-	print_mode_shape(num, mode, x, y + step, 33);
+#ifdef _WIN32
+	print_mode_shape(num, mode, x, y + step, 40);
+#else
+	print_mode_shape(num, mode, x, y + step, 32);
+#endif
 }
 
 //消除提示方块
