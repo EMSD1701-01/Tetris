@@ -57,7 +57,7 @@ int shape[7][4][18] =
 /**
  * 文件作用域变量、宏
  */
-#ifdef WIN32
+#ifdef _WIN32
 
 #define BOXBG			40
 #define BORDERBG		41
@@ -78,7 +78,7 @@ char num_buf[10];		//数字转字符串专用buffer
 /**
  * 跨平台特性
  */
-#ifdef WIN32 //Windows
+#ifdef _WIN32 //Windows
 #include <windows.h>
 
 
@@ -178,7 +178,7 @@ char *i2a(int num, char *buf)
 
 void print_start_interface()
 {
-#ifdef WIN32 //Windows
+#ifdef _WIN32 //Windows
 	//get output handle 
 	hand = GetStdHandle(STD_OUTPUT_HANDLE);
 	

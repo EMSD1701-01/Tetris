@@ -297,16 +297,15 @@ static void move_shape_down()
 		eraser_shape(n_num, n_mode, n_x, n_y);
 		new_shape();
 		print_mode_shape(num, mode, x, y, color);
+		print_hint_shape();
 		print_mode_shape(n_num, n_mode, n_x, n_y, n_color);
 		// close_alarm();
 	} else									//移动后不会触底
 	{
 		//先清理原有图形
-		erase_hint_shape();
 		eraser_shape(num, mode, x, y);
 		y++;
 		print_mode_shape(num, mode, x, y, color);
-		print_hint_shape();
 	}
 }
 
