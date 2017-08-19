@@ -236,7 +236,7 @@ static void destroy_line() {
 	if (score >= level * g_upscore) {
 		level++;
 		int time = tm - 200000 * level;
-		if (time == 0)
+		if (time <= 0)
 			time = 200000;
 		close_alarm();
 		alarm_us(time);
