@@ -71,7 +71,7 @@ void start_game() {
 	//开始接受键盘消息
 }
 
-#ifdef WIN32 //----------------Windows----------------------
+#ifdef _WIN32 //----------------Windows----------------------
 
 UINT_PTR timerId;
 
@@ -129,7 +129,7 @@ static int getch()
 	return ch;
 }
 
-#endif //WIN32-------------------------------------------
+#endif //_WIN32-------------------------------------------
 
 //信号注册函数
 void catch_signal(int signo) {
@@ -396,7 +396,7 @@ void key_control() {
 	//左 方块左移
 	//右 方块右移
 
-#ifdef WIN32 //---------------Windows------------
+#ifdef _WIN32 //---------------Windows------------
 
 #include <windows.h>
 
@@ -546,8 +546,8 @@ void key_control() {
 		}
 		}
 	}
-
-#endif //WIN32-----------------------------------
+	
+#endif //_WIN32-----------------------------------
 
 
 }
