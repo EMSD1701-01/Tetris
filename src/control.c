@@ -71,7 +71,7 @@ void start_game() {
 	//开始接受键盘消息
 }
 
-#ifdef _WIN32 //----------------Windows----------------------
+#ifdef WIN32 //----------------Windows----------------------
 
 UINT_PTR timerId;
 
@@ -129,7 +129,7 @@ static int getch()
 	return ch;
 }
 
-#endif //_WIN32-------------------------------------------
+#endif //WIN32-------------------------------------------
 
 //信号注册函数
 void catch_signal(int signo) {
@@ -297,16 +297,15 @@ static void move_shape_down()
 		eraser_shape(n_num, n_mode, n_x, n_y);
 		new_shape();
 		print_mode_shape(num, mode, x, y, color);
+		print_hint_shape();
 		print_mode_shape(n_num, n_mode, n_x, n_y, n_color);
 		// close_alarm();
 	} else									//移动后不会触底
 	{
 		//先清理原有图形
-		erase_hint_shape();
 		eraser_shape(num, mode, x, y);
 		y++;
 		print_mode_shape(num, mode, x, y, color);
-		print_hint_shape();
 	}
 }
 
@@ -396,7 +395,7 @@ void key_control() {
 	//左 方块左移
 	//右 方块右移
 
-#ifdef _WIN32 //---------------Windows------------
+#ifdef WIN32 //---------------Windows------------
 
 #include <windows.h>
 
@@ -546,8 +545,8 @@ void key_control() {
 		}
 		}
 	}
-	
-#endif //_WIN32-----------------------------------
+
+#endif //WIN32-----------------------------------
 
 
 }
